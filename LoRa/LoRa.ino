@@ -1,13 +1,17 @@
+#include <LoRa.h>
 #include <SPI.h>
 
 // TODO: look Arduino SPI pinout pins 
-#define LORA_MISO 1
-#define LORA_MOSI 2
-#define LORA_SCK  3
-#define LORA_NSS  4
+#define LORA_MISO 12
+#define LORA_MOSI 11
+#define LORA_SCK  13
+#define LORA_NSS  10
+#define REG_RSSI_WIDEBAND        0x2c
 
-char buff[50];
-int buff_size = 50;
+
+char buff[] = "Hello";
+int buff_size = 5;
+uint8_t response = 0xFF;
 
 void setup() {
   // put your setup code here, to run once:
@@ -16,18 +20,21 @@ void setup() {
   pinMode(LORA_SCK, OUTPUT);
   pinMode(LORA_NSS, OUTPUT);
 
+  Serial.begin(9600);
+
   SPI.begin();
-  buff[0] = 'H';
-  buff[1] = 'e';
-  buff[2] = 'l';
-  buff[3] = 'l';
-  buff[4] = 'o';
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  SPI.beginTransaction(SPISettings(915000000, MSBFIRST, SPI_MODE0));
-  SPI.tranfser(buff, buff_size);
+  Serial.println(buff);
+  response = 0xFF;
+  SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
+  digitalWrite(LORA_NSS, LOW);
+  SPI.transfer(REG_RSSI_WIDEBAND);
+  response = SPI.transfer(0x00);
+  digitalWrite(LORA_NSS, HIGH);
   SPI.endTransaction();
+  Serial.println(response);
   
 }
