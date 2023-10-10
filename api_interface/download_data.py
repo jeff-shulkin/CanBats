@@ -2,7 +2,6 @@ import requests
 import json
 import pytz
 from datetime import datetime
-from tzlocal import get_localzone
 from decouple import config
 
 all_url = config('BASE_URL') + '/allitems'
