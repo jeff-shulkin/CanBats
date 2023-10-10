@@ -115,19 +115,19 @@ int LoRaClass::begin(long frequency)
 
     // perform reset
     digitalWrite(_reset, LOW);
-    delay(10);
+    delay(100);
     digitalWrite(_reset, HIGH);
-    delay(10);
+    delay(100);
   }
 
   // start SPI
   _spi->begin();
 
   // check version
-  
+  //writeRegister(REG_VERSION, 0x12);
   uint8_t version = readRegister(REG_VERSION);
-  Serial.begin(9600);
-  Serial.println(version);
+//  Serial.begin(9600);
+//  Serial.println(version);
   if (version != 0x12) {
     return 0;
   }
