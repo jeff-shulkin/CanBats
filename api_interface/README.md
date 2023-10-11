@@ -14,5 +14,5 @@ To upload, run the following command:
 
 ## How to Download Data
 Run the following command:  
-```python3 download_data.csv```  
+```python3 download_data.py```  
 You can then filter by time, location, or species, or use no filter at all. Be sure to add no more than one filter for each available filter option. The filtered data will be output as "\<Time> \<FILTERED/ALL> DATA.csv"
