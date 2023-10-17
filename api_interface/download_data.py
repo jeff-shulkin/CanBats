@@ -27,7 +27,7 @@ def get_all_items():
     with open(f'{datetime.now()} ALL DATA.csv', 'w') as of:
         for item in json.loads(response.text)['items']:
             of.write(f"{item['otime']},{item['latitude']},{item['longitude']},{item['species']}\n")
-    print(f"Wrote file \"{datetime.now()} ALL_DATA.csv\"")
+    print(f"Wrote file \"{datetime.now()} ALL DATA.csv\"")
 
 def get_filtered_items(filters, ea_vals):
     filter = '(' + ') AND ('.join(filters) + ')'

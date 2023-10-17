@@ -1,7 +1,7 @@
 # API Interface
 ## Required Packages
 The following packages must be installed through pip to upload and download data:  
-```requests, json, pytz, datetime, decouple```  
+```requests, json, pytz, datetime, python-decouple```  
   
   You must also have a .env file in the same directory you are running the .py files from containing the API url under the name 'BASE_URL'. For access to this url, please contant Ali Kassem (kassemal@umich.edu).
 
