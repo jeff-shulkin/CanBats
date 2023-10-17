@@ -19,6 +19,7 @@ def main():
     else:
         count = len(json.loads(response.text)['items'])
 
+    index = 0
     with open(sys.argv[1]) as csvFile:
         for line in csvFile:
             attrs = [item.strip() for item in line.split(',')]
@@ -32,10 +33,11 @@ def main():
             response = requests.post(post_url, data=data)
 
             if response.status_code != 200:
-                print("Error uploading item:", line)
+                print(f"Error uploading item {index}:", line.strip())
                 print(response.text)
             else:
                 count += 1
+            index += 1
 
 if __name__ == "__main__":
     main()
