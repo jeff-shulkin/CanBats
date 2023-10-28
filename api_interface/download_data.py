@@ -53,9 +53,10 @@ def main():
     
     filters = []
     ea_vals = {}
+    prompt = "Add filter species (s), location (l), or time period (t), OR run query (r): "
 
     while 1:
-        addFilter = input("Add filter species (s), location (l), or time period (t), OR run query (r): ")[0].lower()
+        addFilter = input(prompt)[0].lower()
 
         if addFilter == 'r':
             if not len(filters):
