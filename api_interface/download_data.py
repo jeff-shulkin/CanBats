@@ -47,7 +47,7 @@ def get_filtered_items(filters, ea_vals):
     with open(f'{datetime.now()} FILTERED DATA.csv', 'w') as of:
         for item in json.loads(response.text):
             of.write(f"{int(item['otime'])},{item['latitude']},{item['longitude']},{item['species']}\n")
-    print(f"Wrote file \"{datetime.now()} ALL_DATA.csv\"")
+    print(f"Wrote file \"{datetime.now()} FILTERED DATA.csv\"")
 
 def main():
     
