@@ -150,6 +150,10 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=CNQDALDR
 
+[GeneratedDocument1]
+DocumentPath=Project Outputs for Node_PCB\Design Rule Check - Node_Layout.html
+DItemRevisionGUID=
+
 [Configuration1]
 Name=Sources
 ParameterCount=0
