@@ -20,27 +20,19 @@ int counter = 0;
 
 void setup() {
   // put your setup code here, to run once:
-  pinMode(LORA_MISO, INPUT);
-  pinMode(LORA_MOSI, OUTPUT);
-  pinMode(LORA_SCK, OUTPUT);
-//  pinMode(LORA_NSS, OUTPUT);
   
   Serial.begin(9600);
-
   Serial.println("LoRa Receiver");
-  //LoRa.begin(915E6);
+  
   if (!LoRa.begin(915E6)) {
     Serial.println("Starting LoRa failed!");
     while (1);
   }
 
-  //SPI.begin();
-
-  
 }
 
 void loop() {
-  test_receive();
+  //test_receive();
   test_send();
 }
 
@@ -72,6 +64,7 @@ void test_send(){
   LoRa.print(counter);
   LoRa.endPacket();
 
+  //Serial.println("sup");
   counter++;
 
   delay(5000);
