@@ -1,0 +1,4 @@
+Record=TopLevelDocument|FileName=ATMEGA.SchDoc|SheetNumber=3
+Record=NoMainPathDocument|SourceDocument=ATMEGA.SchDoc|FileName=LoRa.SchDoc|SheetNumber=2
+Record=NoMainPathDocument|SourceDocument=ATMEGA.SchDoc|FileName=Mic.SchDoc|SheetNumber=1
+Record=NoMainPathDocument|SourceDocument=ATMEGA.SchDoc|FileName=Power.SchDoc|SheetNumber=4
