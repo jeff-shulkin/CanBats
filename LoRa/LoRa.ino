@@ -22,7 +22,7 @@ void setup() {
   // put your setup code here, to run once:
   
   Serial.begin(9600);
-  Serial.println("LoRa Receiver");
+  Serial.println("LoRa Transmitter");
   
   if (!LoRa.begin(915E6)) {
     Serial.println("Starting LoRa failed!");
@@ -60,7 +60,7 @@ void test_send(){
 
   // send packet
   LoRa.beginPacket();
-  LoRa.print("hello ");
+  LoRa.print("Howdy, howdy y'all! This is packet: ");
   LoRa.print(counter);
   LoRa.endPacket();
 
