@@ -413,3 +413,6 @@ __pycache__/
 
 # OpenCover UI analysis results
 OpenCover/
+
+# CSV files from using and testing the API
+.csv
