@@ -1,0 +1,40 @@
+// Define:
+    Define BMS addresses
+    Include LoRa library (already has addresses)
+    Define SOP and EOP for LoRa transmission (??)
+
+// Setup:
+    Init LoRa
+        Library handles all of this
+    Init BMS
+        - Boot
+        - Establish current thresholds
+        - Set our minimum capacity
+    Establish that Node X is online
+        - Maybe also say what longitude and latitude this is at?
+
+
+// Tasks for our RTOS:
+    LoRa Task (leaf node):
+        Likely triggered by an interrupt (or super high priority?)
+            - Pi tells Atmega there is log info
+                - If atmega needs to MAKE log info, that's a separate Task
+                - log info should be stored in an array of a Struct/class log
+        Sends data until we get an EOP
+
+    LoRa Task (central node):
+        Triggered by Data0 interrupt (within LoRa Library)
+        Receive data until we get an EOP
+            - We need to define an EOP
+    
+    BMS Task:
+        - Low priority
+        - Samples Battery Q Val
+        - If get to certain low power val:
+            - Send over LoRa "Node X is low on battery"
+            - Go to sleep
+        - If we are sufficiently charged
+            - Wake back up
+        
+        
+    
