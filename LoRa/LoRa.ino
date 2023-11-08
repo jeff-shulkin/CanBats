@@ -1,7 +1,4 @@
-//#include <LoRa.h>
-
-
-#include "LoRa.h"
+#include <LoRa.h>
 #include <SPI.h>
 
 #define LORA_MISO 12
