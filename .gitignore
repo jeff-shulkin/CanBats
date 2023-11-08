@@ -415,4 +415,7 @@ __pycache__/
 OpenCover/
 
 # CSV files from using and testing the API
-.csv
+*.csv
+
+# env file for API key
+.env
