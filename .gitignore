@@ -418,4 +418,4 @@ OpenCover/
 *.csv
 
 # env file for API key
-.env
+*.env
