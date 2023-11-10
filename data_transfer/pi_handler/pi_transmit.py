@@ -9,16 +9,28 @@ ser.open()
 
 cmd = sys.argv[1]   # the command being ran by the caller
 
-if cmd == 'SEND_DATA':    # only rank by leaf nodes
-    ser.write(0) # send acknowledge byte
+if cmd == 'SEND_DATA':    # only ran by leaf nodes
+    data = open('new_data.csv')
 
-    with open('new_data.csv', 'rb') as df:    # read the newly collected bat data
-        byte = df.read(1)
-        while byte:
-            ser.write(byte) # send one byte at a time
-            byte = df.read(1)
-    
-    ser.write(b'STOP')  # stop condition
+    for line in data:
+        vals = line.strip().split(',')
+        time_bytes = int(vals[0]).to_bytes(4)
+        batID_bytes = int(vals[1]).to_bytes(4)
+        confidence_bytes = struct.pack('!f', float(vals[2]))
+
+        # Send: time (bigE), batID (one byte), confidence (bigE)
+        for byte in time_bytes:
+            ser.write(byte)
+        ser.write(batID_bytes[3])
+        for byte in confidence_bytes:
+            ser.write(byte)
+
+    # send the stopcode
+    ser.write("JUNK")
+    ser.write(0xFF)
+    ser.write("JUNK")
+
+    data.close()
 
 elif cmd == 'GET_LEAF_DATA':    # only ran by central node
 

@@ -27,33 +27,32 @@ void serial_receive() {
     Serial.print(cmd);  // ack
     switch (cmd) {
         case GET_LEAF_DATA:
-            get_leaf_data(Serial.read());
+            send_leaf_data(Serial.read());
     }
 }
 
-void get_leaf_data(uint8_t node) {
+void send_leaf_data(uint8_t node) {
     send_lora_command(node, DATA_REQUEST);
-    
-    //Each leaf data point is 9 bytes: first four are time, next is species ID, last four are confidence
-    //The raw bytes will be directly sent to the pi over serial
+        
+    // Continually get 9 byte packets
+    char buff[9];
 
-    int packetSize = 0;
-    while (!packetSize)
-        packetSize = LoRa.parsePacket();
-    
-    uint16_t bytes = 0;
-    while (LoRa.available()) {
-        Serial.print((uint8_t)LoRa.read());
-        ++bytes;
+    while (1) {
+        int packetSize = LoRa.parsePacket();
+        if (!packetSize)
+            continue;
+
+        if (packetSize != 9) {
+            //idk what to do
+        }
+
+        for (uint8_t i=0; i<9; ++i) {
+            buff[i] = LoRa.read();
+            Serial.print(buff[i]);
+        }
+
+        if (buff[4] == 0xFF)    // stop condition met
+            break;
     }
 
-    // if we somehow didn't get the right amount of data
-    if (!(bytes % 9)) {
-        //handle the error somehow?
-        while (1);
-    }
-
-    Serial.print("JUNK");
-    Serial.print(0xFF);     // stopcode (no species ID is 0xFF)
-    Serial.print("JUNK");
 }
