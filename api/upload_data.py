@@ -23,13 +23,22 @@ def main():
     with open(sys.argv[1]) as csvFile:
         for line in csvFile:
             attrs = [item.strip() for item in line.split(',')]
-            data = {
-                "id" : count,
-                "otime" : int(attrs[0]),
-                "latitude" : float(attrs[1]),
-                "longitude" : float(attrs[2]),
-                "species" : attrs[3]
-            }
+            if len(attrs) != 5:
+                print("ERROR: Incorrect Formatting on line",index)
+                return
+            try:
+                data = {
+                    "id" : count,
+                    "otime" : int(attrs[0]),
+                    "latitude" : float(attrs[1]),
+                    "longitude" : float(attrs[2]),
+                    "species" : attrs[3],
+                    "confidence" : float(attrs[4])
+                }
+            except:
+                print("ERROR: value issue on line",index)
+                return
+            
             response = requests.post(post_url, data=data)
 
             if response.status_code != 200:

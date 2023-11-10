@@ -16,16 +16,18 @@ This is a breakdown of the entire process of data going from the leaf nodes to t
 9. cn's pi writes that data to the csv file
 10. cn's pi uploads that csv file to the server
 
-## PI to PI
+## Transmission Commands
+
+### PI to PI
 - `'SEND_DATA'`: send the recently collected bat data to the ATmega for transmission
-- `'GET_LEAF_DATA'`: command ATmega to get all leaf data, stores data in csv file
+- `'GET_LEAF_DATA'`: get all leaf data, stores data in csv file
 
-## ATmega Receive Commands
-These are commands that are sent from the PI to the ATmega over Serial
+### PI to ATmega
+- `GET_LEAF_DATA (0x00)`: Sends ATmega a leaf node ID and requests that the ATmega sends the PI the data from that leaf node
 
-## ATmega to PI
+### ATmega to PI
 - `DATA_REQUEST (0x00)`: request the the recently collected bat data
 
-## ATmega to ATmega (LoRa)
+### ATmega to ATmega (LoRa)
 LoRa commands are two bytes. The first is the target node ID and the second is the command. Upon receiving, the target node first transmits its own ID as acknowledgement
 - `DATA_REQUEST (0x00)`: requests that the receiving node sends its recently collected bat data
