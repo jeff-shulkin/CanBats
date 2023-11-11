@@ -1,15 +1,16 @@
+import signal
 import sys
 import serial
 import json
 import struct
 from time import sleep
+import RPi.GPIO as GPIO
 
-ser = serial.Serial("/dev/ttyS0", 9600) # Open port at 9600 baud
-ser.open()
+DATA_REQUEST = 0
+INTERRUPT_PIN = 25
+NUM_LEAF_NODES = 1
 
-cmd = sys.argv[1]   # the command being ran by the caller
-
-if cmd == 'SEND_DATA':    # only ran by leaf nodes
+def send_data():
     data = open('new_data.csv')
 
     for line in data:
@@ -38,12 +39,11 @@ if cmd == 'SEND_DATA':    # only ran by leaf nodes
 
     data.close()
 
-elif cmd == 'GET_LEAF_DATA':    # only ran by central node
+def get_leaf_data():
     bat_species = json.load('bat_species.json')
     node_locations = json.load('node_locations.json')
     data = open("new_data.csv",'w')
-    num_nodes = 0
-    for node_id in range(num_nodes):
+    for node_id in range(NUM_LEAF_NODES):
         ser.write(0)
         ser.write(node_id)
         while not ser.in_waiting(): # wait for ack
@@ -81,6 +81,33 @@ elif cmd == 'GET_LEAF_DATA':    # only ran by central node
 
     data.close()
 
+def signal_handler(sig, frame):
+    GPIO.cleanup()
+    sys.exit(0)
 
+def serial_handle(channel):
+    global ser
+    cmd = ser.read()
+    ser.write(cmd)
 
-ser.close()
+    if cmd == DATA_REQUEST:
+        send_data()
+
+if __name__ == '__main__':
+    ser = serial.Serial("/dev/ttyS0", 9600) # Open port at 9600 baud
+    ser.open()
+
+    if len(argv) > 1:   # RUN THIS SCRIPT WITH AN ARG ON THE CENTRAL NODE
+        get_leaf_data()
+
+    else:
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(INTERRUPT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+        GPIO.add_event_detect(INTERRUPT_PIN, GPIO.BOTH, 
+                callback=serial_handle, bouncetime=50)
+        
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.pause()
+
+    ser.close()
