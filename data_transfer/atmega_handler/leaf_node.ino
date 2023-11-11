@@ -3,12 +3,26 @@
 #include <SPI.h>
 
 #define NODE_ID 0
-#define PI_INTERRUPT 25
+#define PI_INTERRUPT 4
 
 #define DATA_REQUEST 0
 #define GET_LEAF_DATA 1
 
 static bool toggle_interrupt = 0;
+
+void setup() {
+    Serial.begin(9600);
+
+    if (!LoRa.begin(915E6)) {
+        while (1);  // LoRa failed
+    }
+}
+
+void loop() {
+    int received = LoRa.parsePacket();
+    if (received)
+        lora_receive();
+}
 
 void send_pi_command(uint8_t cmd) {
     // interrupt the pi so it can receive the command

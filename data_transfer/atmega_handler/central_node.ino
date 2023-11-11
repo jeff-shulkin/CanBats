@@ -5,6 +5,19 @@
 #define DATA_REQUEST 0
 #define GET_LEAF_DATA 1
 
+void setup() {
+    Serial.begin(9600);
+
+    if (!LoRa.begin(915E6)) {
+        while (1);  // LoRa failed
+    }
+}
+
+void loop() {
+    if (Serial.available())
+        serial_receive();
+}
+
 void send_lora_command(uint8_t node, uint8_t cmd) {
     // assuming LoRa is already running
     LoRa.beginPacket();

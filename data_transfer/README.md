@@ -18,16 +18,35 @@ This is a breakdown of the entire process of data going from the leaf nodes to t
 
 ## Transmission Commands
 
-### PI to PI
+### Pi to Pi
 - `'SEND_DATA'`: send the recently collected bat data to the ATmega for transmission
 - `'GET_LEAF_DATA'`: get all leaf data, stores data in csv file
 
 ### PI to ATmega
 - `GET_LEAF_DATA (0x00)`: Sends ATmega a leaf node ID and requests that the ATmega sends the PI the data from that leaf node
 
-### ATmega to PI
+### ATmega to Pi
 - `DATA_REQUEST (0x00)`: request the the recently collected bat data
 
 ### ATmega to ATmega (LoRa)
 LoRa commands are two bytes. The first is the target node ID and the second is the command. Upon receiving, the target node first transmits its own ID as acknowledgement
 - `DATA_REQUEST (0x00)`: requests that the receiving node sends its recently collected bat data
+
+## Testing Setup
+
+Pin config:
+- Make sure you've correctly configured `NUM_LEAF_NODES` in `pi_handler.py`
+- Connect GPIO-25 on the Pi to d4 on the Arduino
+- ~~Connect GPIO-19 on the Pi to d5 on the Arduino~~
+- Pi and Arduino serial should be connected
+- LoRa modules should be connected to Arduino
+
+On the **leaf nodes**, have in a directory `pi_handler.py` and a csv file named `new_data.csv`. This CSV file should have lines formatted as follows:  
+`<uint32>,<float32>,<float32>,<string>,<float32>`  
+Execute the Python script with no arguments.  
+
+On the **central node**, have in a directory `pi_handler.py` and nothing else. Run this script with one argument **when you are ready to begin the test**. The argument can be literally anything 
+
+Upload `central_node.ino` to the central node and `leaf_node.ino` to the leaf node
+
+Pray
