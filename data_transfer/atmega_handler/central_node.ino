@@ -8,15 +8,16 @@
 void send_lora_command(uint8_t node, uint8_t cmd) {
     // assuming LoRa is already running
     LoRa.beginPacket();
-    LoRa.print(node);
-    LoRa.print(cmd);
+    LoRa.write(node);
+    LoRa.write(cmd);
     LoRa.endPacket();
 
     int packetSize = 0;
     // wait for ack
     while (!packetSize)
         packetSize = LoRa.parsePacket();
-    if ((uint8_t)LoRa.read() != node) {
+    uint8_t resp_node = LoRa.read(), resp_cmd = LoRa.read();
+    if (resp_node != node || resp_cmd != cmd) {
         // we have an error
         while (1);
     }
@@ -27,24 +28,34 @@ void serial_receive() {
     Serial.print(cmd);  // ack
     switch (cmd) {
         case GET_LEAF_DATA:
-            send_leaf_data(Serial.read());
+            collect_leaf_data(Serial.read());
     }
 }
 
-void send_leaf_data(uint8_t node) {
+void collect_leaf_data(uint8_t node) {
     send_lora_command(node, DATA_REQUEST);
         
     // Continually get 9 byte packets
     char buff[9];
 
+    int packetSize = 0;
     while (1) {
-        int packetSize = LoRa.parsePacket();
-        if (!packetSize)
-            continue;
+        LoRa.beginPacket();
+        LoRa.write(0);  // send ready
+        LoRa.endPacket();
+        
+        while (!packetSize)    // keep waiting for a packet
+            packetSize = LoRa.parsePacket();
 
         if (packetSize != 9) {
             //idk what to do
+            while (1);
         }
+
+        packetSize = 0;
+
+        // wait for pi ready
+        while (!Serial.available());
 
         for (uint8_t i=0; i<9; ++i) {
             buff[i] = LoRa.read();

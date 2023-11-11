@@ -13,6 +13,12 @@ if cmd == 'SEND_DATA':    # only ran by leaf nodes
     data = open('new_data.csv')
 
     for line in data:
+        # wait for arduino ready
+        while not ser.in_waiting:
+            sleep(0.1)
+
+        junk = ser.read()   # discard ready byte
+
         vals = line.strip().split(',')
         time_bytes = int(vals[0]).to_bytes(4)
         batID_bytes = int(vals[1]).to_bytes(4)
@@ -24,7 +30,7 @@ if cmd == 'SEND_DATA':    # only ran by leaf nodes
         ser.write(batID_bytes[3])
         for byte in confidence_bytes:
             ser.write(byte)
-
+        
     # send the stopcode
     ser.write("JUNK")
     ser.write(0xFF)
@@ -33,7 +39,6 @@ if cmd == 'SEND_DATA':    # only ran by leaf nodes
     data.close()
 
 elif cmd == 'GET_LEAF_DATA':    # only ran by central node
-
     bat_species = json.load('bat_species.json')
     node_locations = json.load('node_locations.json')
     data = open("new_data.csv",'w')
@@ -42,7 +47,7 @@ elif cmd == 'GET_LEAF_DATA':    # only ran by central node
         ser.write(0)
         ser.write(node_id)
         while not ser.in_waiting(): # wait for ack
-            pass
+            sleep(0.1)
         
         if ser.read() != 0: # communication error
             print("message not acknowledged properly, aborting")
@@ -52,11 +57,13 @@ elif cmd == 'GET_LEAF_DATA':    # only ran by central node
         stopcode = 0xFF  # when we see this, we're done
 
         while True:
+            ser.write(0)    # send ready
+
             while len(buff) < 9:    # wait until we've collected 9 bytes
                 # wait until a byte is available
                 while not ser.in_waiting:
-                    # sleep
-                    pass
+                    sleep(0.01)
+                
                 buff.append(ser.read())
             
             # all data has been collected from this node
