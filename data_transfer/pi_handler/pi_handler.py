@@ -46,11 +46,11 @@ def get_leaf_data():
     for node_id in range(NUM_LEAF_NODES):
         ser.write(0)
         ser.write(node_id)
-        while not ser.in_waiting(): # wait for ack
+        while not ser.in_waiting(): # wait for echo
             sleep(0.1)
         
         if ser.read() != 0: # communication error
-            print("message not acknowledged properly, aborting")
+            print("message not echoed properly, aborting")
             break
 
         buff = bytearray()

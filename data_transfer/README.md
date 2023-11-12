@@ -42,11 +42,18 @@ Pin config:
 - LoRa modules should be connected to Arduino
 
 On the **leaf nodes**, have in a directory `pi_handler.py` and a csv file named `new_data.csv`. This CSV file should have lines formatted as follows:  
-`<uint32>,<float32>,<float32>,<string>,<float32>`  
-Execute the Python script with no arguments.  
+`<uint32>,<uint8>,<float32>`  
+Execute the Python script with no arguments.
 
-On the **central node**, have in a directory `pi_handler.py` and nothing else. Run this script with one argument **when you are ready to begin the test**. The argument can be literally anything 
+On the **central node**, have in a directory `pi_handler.py`, `bat_species.json`, and `node_locations.json`. For the node locations file, create a list of tuples, each having two float values. You should have as many tuples as `NUM_LEAF_NODES`. Run this script with one argument **when you are ready to begin the test**. The argument can be literally anything 
 
 Upload `central_node.ino` to the central node and `leaf_node.ino` to the leaf node
 
 Pray
+
+## Testing Checkpoints
+
+1. CN Pi can talk to Arduino
+2. LN Arduino can "interrupt" Pi
+3. LoRa messages are sent and received (with echo check)
+4. Just go with the flo yo

@@ -26,7 +26,7 @@ void send_lora_command(uint8_t node, uint8_t cmd) {
     LoRa.endPacket();
 
     int packetSize = 0;
-    // wait for ack
+    // wait for echo
     while (!packetSize)
         packetSize = LoRa.parsePacket();
     uint8_t resp_node = LoRa.read(), resp_cmd = LoRa.read();
@@ -38,7 +38,7 @@ void send_lora_command(uint8_t node, uint8_t cmd) {
 
 void serial_receive() {
     uint8_t cmd = Serial.read();
-    Serial.print(cmd);  // ack
+    Serial.print(cmd);  // send echo
     switch (cmd) {
         case GET_LEAF_DATA:
             collect_leaf_data(Serial.read());

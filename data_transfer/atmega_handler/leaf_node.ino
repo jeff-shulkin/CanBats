@@ -32,9 +32,9 @@ void send_pi_command(uint8_t cmd) {
 
     Serial.print(cmd);
     while (!Serial.available());
-    uint8_t ack = Serial.read();
+    uint8_t echo = Serial.read();
 
-    if (ack != cmd) {
+    if (echo != cmd) {
         // Handle the error somehow
         while (1);
     }
