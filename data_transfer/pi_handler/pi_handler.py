@@ -9,6 +9,9 @@ import RPi.GPIO as GPIO
 DATA_REQUEST = 0
 INTERRUPT_PIN = 25
 NUM_LEAF_NODES = 1
+GET_LEAF_DATA = 0
+
+ser = serial.Serial("/dev/ttyS0", 9600) # Open port at 9600 baud
 
 def send_data():
     data = open('new_data.csv')
@@ -33,31 +36,36 @@ def send_data():
             ser.write(byte)
         
     # send the stopcode
-    ser.write("JUNK")
-    ser.write(0xFF)
-    ser.write("JUNK")
+    ser.write(b'JUNK')
+    ser.write(b'\xFF')
+    ser.write(b'JUNK')
 
     data.close()
 
 def get_leaf_data():
-    bat_species = json.load('bat_species.json')
-    node_locations = json.load('node_locations.json')
+    print("Entered get_leaf_data")
+
+    with open('bat_species.json') as bf:
+        bat_species = json.load(bf)
+    with open('node_locations.json') as nf:
+        node_locations = json.load(nf)
     data = open("new_data.csv",'w')
+
     for node_id in range(NUM_LEAF_NODES):
-        ser.write(0)
-        ser.write(node_id)
+        ser.write(node_id.to_bytes(1))
+        ser.write(GET_LEAF_DATA.to_bytes(1))
         while not ser.in_waiting(): # wait for echo
             sleep(0.1)
         
-        if ser.read() != 0: # communication error
+        if ser.read() != node_id.to_bytes(1): # communication error
             print("message not echoed properly, aborting")
             break
 
         buff = bytearray()
-        stopcode = 0xFF  # when we see this, we're done
+        stopcode = b'\xFF'  # when we see this, we're done
 
         while True:
-            ser.write(0)    # send ready
+            ser.write(b'\x00')    # send ready
 
             while len(buff) < 9:    # wait until we've collected 9 bytes
                 # wait until a byte is available
@@ -86,7 +94,7 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 def serial_handle(channel):
-    global ser
+    ser
     cmd = ser.read()
     ser.write(cmd)
 
@@ -94,10 +102,9 @@ def serial_handle(channel):
         send_data()
 
 if __name__ == '__main__':
-    ser = serial.Serial("/dev/ttyS0", 9600) # Open port at 9600 baud
-    ser.open()
+    #ser.open()
 
-    if len(argv) > 1:   # RUN THIS SCRIPT WITH AN ARG ON THE CENTRAL NODE
+    if len(sys.argv) > 1:   # RUN THIS SCRIPT WITH AN ARG ON THE CENTRAL NODE
         get_leaf_data()
 
     else:

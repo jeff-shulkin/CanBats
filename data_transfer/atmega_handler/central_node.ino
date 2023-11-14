@@ -5,6 +5,8 @@
 #define DATA_REQUEST 0
 #define GET_LEAF_DATA 1
 
+#define NODE_ID
+
 void setup() {
     Serial.begin(9600);
 
@@ -37,8 +39,16 @@ void send_lora_command(uint8_t node, uint8_t cmd) {
 }
 
 void serial_receive() {
+    uint8_t node_id = Serial.read();
     uint8_t cmd = Serial.read();
-    Serial.print(cmd);  // send echo
+    if (node_id != NODE_ID) {
+        // empty the buffer
+        while (Serial.available())
+            uint8_t trash = Serial.read();
+
+        return;
+    }
+    Serial.print(NODE_ID);  // send echo
     switch (cmd) {
         case GET_LEAF_DATA:
             collect_leaf_data(Serial.read());

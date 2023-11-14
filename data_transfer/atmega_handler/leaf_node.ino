@@ -26,8 +26,8 @@ void loop() {
 
 void send_pi_command(uint8_t cmd) {
     // interrupt the pi so it can receive the command
-    digitalWrite(PI_INTERRUPT, toggle_interrupt);
     toggle_interrupt = !toggle_interrupt;
+    digitalWrite(PI_INTERRUPT, toggle_interrupt);
     delay(150);     // wait to ensure the pi is ready for receiving
 
     Serial.print(cmd);
