@@ -51,8 +51,34 @@ void serial_receive() {
     Serial.print(NODE_ID);  // send echo
     switch (cmd) {
         case GET_LEAF_DATA:
-            collect_leaf_data(Serial.read());
+            while (!Serial.available());
+            testing_thing();
+            break;
+        default:
+            Serial.print('X');
+            break;
     }
+}
+
+void testing_thing() {
+  while (!Serial.available());  // wait for ready
+  Serial.read();  //discard
+  char buff[9];
+  uint32_t time = 0xFF00FF00;
+  float conf = 0.202;
+  memcpy(buff, &time, 4);
+  buff[4] = 2;
+  memcpy(buff+5, &conf, 4);
+
+  for (uint8_t i=0; i<9; ++i)
+    Serial.print(buff[i]);
+
+  while (!Serial.available());  // wait for ready
+  Serial.read();  //discard
+  buff[4] = 0xFF;
+
+  for (uint8_t i=0; i<9; ++i)
+    Serial.print(buff[i]);
 }
 
 void collect_leaf_data(uint8_t node) {

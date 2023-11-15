@@ -9,7 +9,7 @@ import RPi.GPIO as GPIO
 DATA_REQUEST = 0
 INTERRUPT_PIN = 25
 NUM_LEAF_NODES = 1
-GET_LEAF_DATA = 0
+GET_LEAF_DATA = 1
 
 ser = serial.Serial("/dev/ttyS0", 9600) # Open port at 9600 baud
 
@@ -19,7 +19,7 @@ def send_data():
     for line in data:
         # wait for arduino ready
         while not ser.in_waiting:
-            sleep(0.1)
+            sleep(1)
 
         junk = ser.read()   # discard ready byte
 
@@ -52,12 +52,16 @@ def get_leaf_data():
     data = open("new_data.csv",'w')
 
     for node_id in range(NUM_LEAF_NODES):
-        ser.write(node_id.to_bytes(1))
         ser.write(GET_LEAF_DATA.to_bytes(1))
-        while not ser.in_waiting(): # wait for echo
-            sleep(0.1)
+
+        #ser.write(node_id.to_bytes(1))
+        while not ser.in_waiting: # wait for echo
+            print("waiting for echo:",ser.in_waiting)
+            sleep(1)
         
-        if ser.read() != node_id.to_bytes(1): # communication error
+        echo = ser.read()
+        print("got echo:",echo)
+        if ser.read() != GET_LEAF_DATA.to_bytes(1): # communication error
             print("message not echoed properly, aborting")
             break
 
@@ -70,7 +74,7 @@ def get_leaf_data():
             while len(buff) < 9:    # wait until we've collected 9 bytes
                 # wait until a byte is available
                 while not ser.in_waiting:
-                    sleep(0.01)
+                    sleep(1)
                 
                 buff.append(ser.read())
             
@@ -94,7 +98,6 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 def serial_handle(channel):
-    ser
     cmd = ser.read()
     ser.write(cmd)
 
