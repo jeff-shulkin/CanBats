@@ -52,41 +52,36 @@ def get_leaf_data():
     data = open("new_data.csv",'w')
 
     for node_id in range(NUM_LEAF_NODES):
-        ser.write(GET_LEAF_DATA.to_bytes(1))
+        cmd = GET_LEAF_DATA.to_bytes(1)
+        ser.write(cmd)
 
         #ser.write(node_id.to_bytes(1))
         while not ser.in_waiting: # wait for echo
             print("waiting for echo:",ser.in_waiting)
-            sleep(1)
+            sleep(0.05)
         
         echo = ser.read()
         print("got echo:",echo)
-        if ser.read() != GET_LEAF_DATA.to_bytes(1): # communication error
+        if echo != cmd: # communication error
             print("message not echoed properly, aborting")
             break
 
-        buff = bytearray()
-        stopcode = b'\xFF'  # when we see this, we're done
+        stopcode = 0xFF  # when we see this, we're done
 
         while True:
             ser.write(b'\x00')    # send ready
 
-            while len(buff) < 9:    # wait until we've collected 9 bytes
-                # wait until a byte is available
-                while not ser.in_waiting:
-                    sleep(1)
-                
-                buff.append(ser.read())
+            buff = ser.read(9)  # read 9 bytes
             
             # all data has been collected from this node
             if buff[4] == stopcode:
                 break
             
-            # 0-3 are time (bigE), 4 is species ID, 5-8 are confidence (bigE)
-            otime = buff[0]<<24 | buff[1]<<16 | buff[2]<<8 | buff[3]
+            # 0-3 are time, 4 is species ID, 5-8 are confidence
+            otime = buff[3]<<24 | buff[2]<<16 | buff[1]<<8 | buff[0]
             speciesID = buff[4]
             loc = node_locations[node_id]
-            confidence = struct.unpack('!f',buff[5:9])[0]
+            confidence = struct.unpack('f',buff[5:9])[0]
             data.write(f'{otime},{loc[0]},{loc[1]},{bat_species[speciesID]},{confidence}\n')
 
             del buff[:]

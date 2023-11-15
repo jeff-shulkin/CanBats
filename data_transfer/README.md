@@ -19,22 +19,28 @@ This is a breakdown of the entire process of data going from the leaf nodes to t
 ## Transmission Commands
 
 ### Pi to Pi
+
 - `'SEND_DATA'`: send the recently collected bat data to the ATmega for transmission
 - `'GET_LEAF_DATA'`: get all leaf data, stores data in csv file
 
 ### PI to ATmega
+
 - `GET_LEAF_DATA (0x00)`: Sends ATmega a leaf node ID and requests that the ATmega sends the PI the data from that leaf node
 
 ### ATmega to Pi
+
 - `DATA_REQUEST (0x00)`: request the the recently collected bat data
 
 ### ATmega to ATmega (LoRa)
+
 LoRa commands are two bytes. The first is the target node ID and the second is the command. Upon receiving, the target node first transmits its own ID as acknowledgement
+
 - `DATA_REQUEST (0x00)`: requests that the receiving node sends its recently collected bat data
 
 ## Testing Setup
 
 Pin config:
+
 - Make sure you've correctly configured `NUM_LEAF_NODES` in `pi_handler.py`
 - Connect GPIO-25 on the Pi to d4 on the Arduino
 - ~~Connect GPIO-19 on the Pi to d5 on the Arduino~~
