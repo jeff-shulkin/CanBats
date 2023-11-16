@@ -78,10 +78,10 @@ def get_leaf_data():
                 break
             
             # 0-3 are time, 4 is species ID, 5-8 are confidence
-            otime = buff[3]<<24 | buff[2]<<16 | buff[1]<<8 | buff[0]
+            otime = struct.unpack('<I',buff[0:4])[0]
             speciesID = buff[4]
             loc = node_locations[node_id]
-            confidence = struct.unpack('f',buff[5:9])[0]
+            confidence = struct.unpack('<f',buff[5:9])[0]
             data.write(f'{otime},{loc[0]},{loc[1]},{bat_species[speciesID]},{confidence}\n')
 
             del buff[:]
