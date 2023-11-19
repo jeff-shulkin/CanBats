@@ -125,5 +125,5 @@ void bms_setup() {
   Wire.write(dschg_relax_time);
   Wire.write(chg_relax_time);
 
-  Wire.endTransmission;
+  Wire.endTransmission();
 }
