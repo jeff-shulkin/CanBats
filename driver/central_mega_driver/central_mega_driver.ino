@@ -40,9 +40,6 @@
 // Task Declarations
 
 void poll_battery(void *pvParameters); // polls battery level
-void ai_processing(void *pvParameters);
-void recording(void *pvParameters);
-void send_leaf_data(void *pvParameters);
 
 // Function Declarations
 
@@ -56,11 +53,14 @@ void write_bms_df(uint8_t addr, const uint8_t[] data, uint8_t size); // write da
 
 void bms_setup(void); // initialize the BMS chip at startup
 int parse_msg(const char[] msg); // parses a LoRa packet
-void receive_lora_ISR(void); // ISR called on rising edge of LoRa interrupt
 
-// Global Booleans
+// called when receiving LoRa message
+void onReceive(int);
+
+// Global Variables
 bool is_recording = false;
 bool is_processing = false;
+uint8_t leaf_id;
 
 void setup() {
   // put your setup code here, to run once:
@@ -74,6 +74,8 @@ void setup() {
   if(!LoRa.begin(915E6)){
       while(1);
   }
+  LoRa.onReceive(onReceive);
+  LoRa.receive();
 
   // I2C setup
   Wire.begin();
@@ -91,33 +93,6 @@ void setup() {
     ,  NULL
     ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
     ,  NULL );
-
-  xTaskCreate(
-    ai_processing
-    ,  "ai_processing"   // A name just for humans
-    ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
-    ,  NULL
-    ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-    ,  NULL );
-
-
-  xTaskCreate(
-    recording
-    ,  "recording"   // A name just for humans
-    ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
-    ,  NULL
-    ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-    ,  NULL );
-    
-  xTaskCreate(
-    send_leaf_data
-    ,  "send_leaf_data"   // A name just for humans
-    ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
-    ,  NULL
-    ,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-    ,  NULL );
-    
-  
 }
 
 // Task definitions
@@ -147,81 +122,6 @@ void poll_battery(void *pvParameters) {
 
   }
 }
-
-void ai_processing(void *pvParameters){
-  void(pvParameters);
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-
-  while (1) {
-    if (is_processing) {
-      is_processing = false;
-      Serial.print(STOP_AI);
-      vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(250000));
-    } else {
-      is_processing = true;
-      Serial.print(START_AI);
-      vTaskDelay(pdMS_TO_TICKS(10800000)); // 3 hours to process
-    }
-  }
-} // ai_processing() Task
-
-void recording(void *pvParameters){
-  void(pvParameters);
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-
-  while (1) {
-    if (is_recording) {
-      is_recording = false;
-      Serial.print(STOP_RECORDING);
-      vTaskDelay(dpMS_TO_TICKS(/*decide*/));
-    } else {
-      is_recording = true;
-      Serial.print(START_RECORDING);
-      vTaskDelayUntil(/dpMS_TO_TICKS(/*decide*/));
-    }
-  }
-} // recording() Task
-
-void send_leaf_data(void *pvParameters){
-  void(pvParameters);
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-
-  while (1) {
-      // Say which node is sending
-      LoRa.beginPacket();
-      LoRa.write(NODE_ID);
-      LoRa.endPacket();
-
-      // Get data from RPi
-      Serial.print(SEND_LEAF_DATA);
-
-      uint8_t buff[9];
-
-    while (1) {
-        Serial.print((char)0);    // send ready
-       
-        // read 9 bytes of data at a time
-        //digitalWrite(LED_BUILTIN, HIGH);
-        while (Serial.available() < 9);
-        //digitalWrite(LED_BUILTIN, LOW);
-        for (uint8_t i=0; i<9; ++i) {
-            buff[i] = Serial.read();
-        }
-        if (buff[4] == STOPCODE) {   // PI sent stopcode, done transmitting
-            LoRa.beginPacket();
-            LoRa.write(STOPCODE);
-            LoRa.endPacket();
-            break;
-        }
-           
-        // Send 9 byte packet to central node
-        LoRa.beginPacket();
-        LoRa.write(buff,9);
-        LoRa.endPacket();
-        delay(100);
-    }
-  }
-} // send_leaf_data Task
 
 // Non-Task Function defintions
 void rpi_enable() {
@@ -318,6 +218,19 @@ bool mac_read_command(uint8_t *data, uint8_t data_capacity, uint16_t subcmd) {
   return checksum != (~validate);
 }
 
+void onReceive(int packetSize) {
+  if (packetSize==1) {
+    leaf_id = LoRa.read();
+    if(leaf_id == STOPCODE){
+      Serial.print((char)leaf_id);
+    }
+    return;
+  }
+  Serial.print(leaf_id);
+  for (uint8_t i=0; i<9; ++i)
+    Serial.print((char)LoRa.read());
+}
+
 // This is the Idle Task
 // This is what Scheduler runs when there is nothing to run.
 // In our case, his will be FREQUENTLY at night, and for large chunks of the day
@@ -352,7 +265,4 @@ void loop() {
   // Ugh. Yawn... I've been woken up. Better disable sleep mode.
   // Reset the sleep_mode() faster than sleep_disable();
   sleep_reset();
-  
-    
-
-}
+} // loop()
