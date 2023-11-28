@@ -4,12 +4,6 @@ import serial
 import json
 import struct
 from time import sleep
-import RPi.GPIO as GPIO
-
-DATA_REQUEST = 0
-INTERRUPT_PIN = 13
-NUM_LEAF_NODES = 1
-GET_LEAF_DATA = 1
 
 ser = serial.Serial("/dev/ttyS0", 9600) # Open port at 9600 baud
 
@@ -31,7 +25,6 @@ def send_data():
 #        print("byte is of type",type(time_bytes[0]))
         for byte in time_bytes:
             ser.write(byte.to_bytes(1, 'little'))
-        print(batID_byte)
         ser.write(batID_byte)
         for byte in confidence_bytes:
             #print(byte)
@@ -83,12 +76,6 @@ if __name__ == '__main__':
             receive_data()
 
     else:
-        cmd = ser.read()
-        print("got command: " ,cmd)
-        ser.write(cmd)
-        if cmd == DATA_REQUEST.to_bytes(1):
-            send_data()
-        else:
-            print("fuck")
+        send_data()
 
     ser.close()

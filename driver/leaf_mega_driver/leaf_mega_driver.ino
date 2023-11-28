@@ -24,6 +24,7 @@
 #define STOP_AI = 0x02
 #define START_RECORDING = 0x03
 #define STOP_RECORDING = 0x04
+#define STOPCODE 0xFF
 
 // BMS Definitions
 // For a lot of address, they use a R/W address convention as follows:
@@ -176,7 +177,7 @@ void recording(void *pvParameters){
     } else {
       is_recording = true;
       Serial.print(START_RECORDING);
-      vTaskDelayUntil(/dpMS_TO_TICKS(/*decide*/));
+      vTaskDelayUntil(dpMS_TO_TICKS(/*decide*/));
     }
   }
 } // recording() Task
@@ -219,6 +220,7 @@ void send_leaf_data(void *pvParameters){
         LoRa.endPacket();
         delay(100);
     }
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(86400000)); // every day
   }
 } // send_leaf_data Task
 

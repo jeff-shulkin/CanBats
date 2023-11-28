@@ -25,6 +25,21 @@ void setup() {
 
         toggle_gauging();
     }
+
+    int16_t dschg_curr_thresh = 0;
+    int16_t chg_curr_thresh = 0;
+    int16_t quit_curr_thresh = 0;
+    uint8_t dschg_relax_time = 0;
+    uint8_t chg_relax_time = 0;
+
+    uint8_t dflash_values[8];   // 8 byte array of data to write
+    memcpy(dflash_values, *dschg_curr_thresh, 2);
+    memcpy(dflash_values + 2, *chg_curr_thresh, 2);
+    memcpy(dflash_values + 4, *quit_curr_thresh, 2);
+    dflash_values[6] = dschg_relax_time;
+    dflash_values[7] = chg_relax_time;
+
+    write_bms_df(PARAMS_ADDR, dflash_values, 8);
 }
 
 void toggle_gauging() {
@@ -35,7 +50,7 @@ void toggle_gauging() {
     Wire.endTransmission();
 }
 
-void mac_read_command(uint8_t *data, uint8_t data_capacity, uint16_t subcmd) {
+bool mac_read_command(uint8_t *data, uint8_t data_capacity, uint16_t subcmd) {
   // Request ManufacturingStatus()
   if (data_capacity < MAC_BUFF_SIZE) {
     Serial.println("Data capacity not met");
@@ -79,51 +94,20 @@ void mac_read_command(uint8_t *data, uint8_t data_capacity, uint16_t subcmd) {
     validate += mac_buff[i+2];
     data[i] = mac_buff[i+2];
   }
-
-  if(checksum != (~validate))
-  {
-    Serial.println("Check Sum failed for data");
-    return;
-  }
-
-  // // this is for a two byte command
-  // // TODO: abstract code, use length
-  // uint16_t manufacturing_status = Wire.read() + (Wire.read() << 8);
-  // sprintf(strbuf, "Raw manufacturing_status val: %#04x");
-  // Serial.println(strbuf);
-
-  // Wire.read();  // NOTE: STILL NEED TO CHECK THE CHECKSUM
-
-  // uint8_t len = Wire.read();    // the size of the message is also transmitted
-  // Serial.print("Expected len 6, got");
-  // Serial.println(len);
-
-  // return manufacturing_status;
+  
+  return checksum != (~validate);
 }
 
-void bms_setup() {
+void write_bms_df(uint16_t addr, const uint8_t[] data, uint8_t size) {
+  for (uint8_t i=0; i<size/4; ++i) {
+    Wire.beginTransmission(BMS_ADDR);
+    Wire.write(addr);
+    Wire.write(addr >> 8);
+    for (uint8_t j=i*4; j<i*4+4; ++j) {
+      Wire.write(data[j]);
+    }
+    Wire.endTransmission();
 
-  // charging values
-  int16_t dschg_curr_thresh = 0;
-  int16_t chg_curr_thresh = 0;
-  int16_t quit_curr_thresh = 0;
-  uint8_t dschg_relax_time = 0;
-  uiint8_t chg_relax_time = 0;
-
-  // write all these values to data flash in little endian
-  Wire.beginTransmission(BMS_ADDR);
-  Wire.write(MAC_SUBCMD);
-  Wire.write(PARAMS_ADDR);
-  Wire.write(PARAMS_ADDR >> 8);
-
-  Wire.write(dschg_curr_thresh);
-  Wire.write(dschg_curr_thresh >> 8);
-  Wire.write(chg_curr_thresh);
-  Wire.write(chg_curr_thresh >> 8);
-  Wire.write(quit_curr_thresh);
-  Wire.write(quit_curr_thresh >> 8);
-  Wire.write(dschg_relax_time);
-  Wire.write(chg_relax_time);
-
-  Wire.endTransmission();
+    delay(5);
+  }
 }
