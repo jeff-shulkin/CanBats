@@ -19,11 +19,11 @@
 #define RPI_BAUD 9600
 
 // RPi Communication Definitions
-#define SEND_LEAF_DATA = 0x00
-#define START_AI = 0x01
-#define STOP_AI = 0x02
-#define START_RECORDING = 0x03
-#define STOP_RECORDING = 0x04
+#define SEND_LEAF_DATA 0x00
+#define START_AI 0x01
+#define STOP_AI 0x02
+#define START_RECORDING 0x03
+#define STOP_RECORDING 0x04
 #define STOPCODE 0xFF
 
 // BMS Definitions
@@ -63,6 +63,8 @@ bool is_recording = false;
 bool is_processing = false;
 
 void setup() {
+  //delay(30000)  // delay to wait for the pi to wake up?
+
   // put your setup code here, to run once:
   // GPIO setup
   pinMode(RPI_POWER_ENABLE, OUTPUT);
