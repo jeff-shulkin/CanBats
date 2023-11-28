@@ -48,13 +48,14 @@ my_signature = interpreter.get_signature_runner()
 
 print("Model Loaded")
 
-os.makedirs('./media/usb', exist_ok=True)
-out_file = open("./media/usb/inference_log.csv", 'w', newline='')
+# os.makedirs('./media/usb', exist_ok=True)
+out_file = open("./outgoing_data.csv", 'w', newline='')
 out_writer = csv.writer(out_file)
 
-time = 12
+# time = 12
 
 for waves in os.listdir("./images"):
+    time = 12 #TODO change to wave timestamp thing
     wave_path = os.path.join(os.fsdecode("./images"), os.fsdecode(waves))
     print(wave_path)
 
@@ -76,6 +77,8 @@ for waves in os.listdir("./images"):
             input[i] = img / 255.0
             i += 1
             # print(img)
+            
+            os.remove(file)
 
         # my_signature is callable with input as arguments.
         output = my_signature(input_1=input)
@@ -102,6 +105,8 @@ for waves in os.listdir("./images"):
 
     for species, count in conf_species_dict.items():
         out_writer.writerow([time, species, count[1], count[0], wave_path])
-    time += 1
+    # time += 1
+
+    os.rmdir(wave_path)
 
 print("Interpretations Done")
