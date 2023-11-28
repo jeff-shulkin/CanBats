@@ -10,12 +10,14 @@ import sys
 import signal
 import serial
 from time import sleep
+from datetime import datetime
 
 SEND_LEAF_DATA = b'\x00'
 START_AI = b'\x01'
 STOP_AI = b'\x02'
 START_RECORDING = b'\x03'
 STOP_RECORDING = b'\x04'
+GET_TIME = b'\x05'
 
 ai_process = None
 record_process = None
@@ -57,3 +59,7 @@ while 1:
         record_process.terminate()
         record_process.wait()
         record_process = None
+
+    elif cmd == GET_TIME:
+        curr_time = int(datetime.utcnow().timestamp())
+        ser.write(curr_time.to_bytes(4, 'little'))

@@ -15,7 +15,7 @@ def send_data():
         
 
         vals = line.strip().split(',')
-        time_bytes = int(vals[0]).to_bytes(4)
+        time_bytes = int(vals[0]).to_bytes(4, 'little')
         batID_byte = int(vals[1]).to_bytes(1)
         confidence_bytes = struct.pack('f', float(vals[2]))
 
@@ -23,13 +23,9 @@ def send_data():
         print(f"sending data: {int(vals[0])}, {int(vals[1])}, {float(vals[2])}")
         print(f"raw data: {time_bytes.hex()}, {batID_byte.hex()}, {confidence_bytes.hex()}")
 #        print("byte is of type",type(time_bytes[0]))
-        for byte in time_bytes:
-            ser.write(byte.to_bytes(1, 'little'))
+        ser.write(time_bytes)
         ser.write(batID_byte)
-        for byte in confidence_bytes:
-            #print(byte)
-            ser.write(byte.to_bytes(1, 'little'))
-#        sleep(10)
+        ser.write(confidence_bytes)
         
     # send the stopcode
     ser.write(b'JUNK')
