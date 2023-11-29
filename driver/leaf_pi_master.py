@@ -55,6 +55,7 @@ signal.signal(signal.SIGINT, int_handler)    # set the keyboard interrupt handle
 signal.signal(signal.SIGTERM, term_handler)  # set the terminate interrupt handler
 
 ser = serial.Serial('/dev/ttyS0', 9600)     # Open serial port
+ser.write(b'\x00')  # Notify the arduino that you've booted up
 
 while 1:
     cmd = ser.read()
