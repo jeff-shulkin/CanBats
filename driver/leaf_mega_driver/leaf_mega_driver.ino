@@ -24,6 +24,7 @@
 #define STOP_AI 0x02
 #define START_RECORDING 0x03
 #define STOP_RECORDING 0x04
+#define GET_TIME 0x05
 #define STOPCODE 0xFF
 
 // BMS Definitions
@@ -62,8 +63,10 @@ void receive_lora_ISR(void); // ISR called on rising edge of LoRa interrupt
 bool is_recording = false;
 bool is_processing = false;
 
+// Global ints
+uiint32_t time;
+
 void setup() {
-  //delay(30000)  // delay to wait for the pi to wake up?
 
   // put your setup code here, to run once:
   // GPIO setup
@@ -77,11 +80,26 @@ void setup() {
       while(1);
   }
 
+  Serial.print((char)GET_TIME);
+  while (Serial.available() < 4);
+  for (uint8_t i=0; i<32; i += 8) {
+    time |= Serial.read() << i;
+  }
+
   // I2C setup
   Wire.begin();
 
   // UART setup
   Serial.begin(RPI_BAUD);
+  
+  uint16_t timeout = 0;
+  // wait until RPi boots up
+  while (timeout < 300 && Serial.available() < 1) {
+    delay(5000);
+    timeout += 5;
+  }
+
+
 
   // FreeRTOS Task Creation
   // TODO : Change Priorities to appropriate levels
