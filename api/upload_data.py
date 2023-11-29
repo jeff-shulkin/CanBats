@@ -47,6 +47,9 @@ def main():
             else:
                 count += 1
             index += 1
+    
+    with open(sys.argv[1], 'w') as csvFile: # erase the file
+        csvFile.write("")
 
 if __name__ == "__main__":
     main()
