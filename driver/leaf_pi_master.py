@@ -22,7 +22,9 @@ GET_TIME = b'\x05'
 ai_process = None
 record_process = None
 
-def signal_handler(signal, frame):  # kills all subprocesses upon keyboard interrupt
+log = open('/home/canbats/master_log.txt', 'w')
+
+def term_handler(signal, frame):  # kills all subprocesses upon keyboard interrupt
     if ai_process != None: # janky syntax but you (hopefully) get the picture
         ai_process.terminate()
         ai_process.wait()
@@ -31,10 +33,26 @@ def signal_handler(signal, frame):  # kills all subprocesses upon keyboard inter
         record_process.terminate()
         record_process.wait()
 
-    print("All subprocesses killed, exiting")
+    log.write("All subprocesses killed, exiting\n")
+
+    log.close()
     sys.exit(0)
 
-signal.signal(signal.SIGINT, signal_handler)    # set the keyboard interrupt handler
+def int_handler(signal, frame):  # kills all subprocesses upon keyboard interrupt
+    if ai_process != None: # janky syntax but you (hopefully) get the picture
+        ai_process.terminate()
+        ai_process.wait()
+
+    if record_process != None: # janky syntax but you (hopefully) get the picture
+        record_process.terminate()
+        record_process.wait()
+
+    log.write("All subprocesses killed, exiting\n")
+    log.close()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, int_handler)    # set the keyboard interrupt handler
+signal.signal(signal.SIGTERM, term_handler)  # set the terminate interrupt handler
 
 ser = serial.Serial('/dev/ttyS0', 9600)     # Open serial port
 
@@ -42,7 +60,7 @@ while 1:
     cmd = ser.read()
 
     if cmd == SEND_LEAF_DATA:
-        subprocess.run(['python3','pi_handler.py'])
+        subprocess.run(['/usr/bin/python3','/home/canbats/pi_handler.py'])
 
     elif cmd == START_AI:
         ai_process = subprocess.Popen(['ai command args'])

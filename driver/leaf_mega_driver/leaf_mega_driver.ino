@@ -80,12 +80,6 @@ void setup() {
       while(1);
   }
 
-  Serial.print((char)GET_TIME);
-  while (Serial.available() < 4);
-  for (uint8_t i=0; i<32; i += 8) {
-    time |= Serial.read() << i;
-  }
-
   // I2C setup
   Wire.begin();
 
@@ -99,7 +93,12 @@ void setup() {
     timeout += 5;
   }
 
-
+  time = 0;
+  Serial.print((char)GET_TIME);
+  while (Serial.available() < 4);
+  for (uint8_t i=0; i<32; i += 8) {
+    time |= Serial.read() << i;
+  }
 
   // FreeRTOS Task Creation
   // TODO : Change Priorities to appropriate levels
