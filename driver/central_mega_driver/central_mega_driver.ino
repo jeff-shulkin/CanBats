@@ -83,6 +83,13 @@ void setup() {
   // UART setup
   Serial.begin(RPI_BAUD);
 
+  uint16_t timeout = 0;
+  // wait until RPi boots up
+  while (timeout < 300 && Serial.available() < 1) {
+    delay(5000);
+    timeout += 5;
+  }
+  
   // FreeRTOS Task Creation
   // TODO : Change Priorities to appropriate levels
 

@@ -8,7 +8,7 @@ from time import sleep
 ser = serial.Serial("/dev/ttyS0", 9600) # Open port at 9600 baud
 
 def send_data():
-    data = open('outgoing_data.csv')
+    data = open('/home/canbats/outgoing_data.csv')
 
     for line in data:
         # wait for arduino ready
@@ -16,8 +16,8 @@ def send_data():
 
         vals = line.strip().split(',')
         time_bytes = int(vals[0]).to_bytes(4, 'little')
-        batID_byte = int(vals[1]).to_bytes(1)
-        confidence_bytes = struct.pack('f', float(vals[2]))
+        batID_byte = int(vals[1]).to_bytes(1, 'little')
+        confidence_bytes = struct.pack('<f', float(vals[2]))
 
         # Send: time, batID, confidence
         print(f"sending data: {int(vals[0])}, {int(vals[1])}, {float(vals[2])}")
@@ -35,17 +35,14 @@ def send_data():
     data.close()
 
 def receive_data():
-    with open('bat_species.json') as bf:
+    with open('/home/canbats/bat_species.json') as bf:
         bat_species = json.load(bf)
-    with open('node_locations.json') as nf:
+    with open('/home/canbats/node_locations.json') as nf:
         node_locations = json.load(nf)
-    data = open("new_data.csv",'a')
+    data = open("/home/canbats/new_data.csv",'a')
     raw_read = ser.read()
     leaf_id = int.from_bytes(raw_read)
     print("got leaf id:",leaf_id, type(leaf_id))
-
-    #ser.write(b'\x00')    # send ready
-    #print("sent ready over serial")
 
     buff = ser.read(9)
     print("got a packet")
