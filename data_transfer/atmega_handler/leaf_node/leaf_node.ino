@@ -46,12 +46,12 @@ void send_pi_command(char cmd) {
 
 void get_pi_data() {
     //digitalWrite(7, LOW);
-    send_pi_command((char)DATA_REQUEST);
+    //send_pi_command((char)DATA_REQUEST);
 
     uint8_t buff[9];
 
     while (1) {
-        Serial.print((char)0);    // send ready
+        //Serial.print((char)0);    // send ready
        
         // read 9 bytes of data at a time
         //digitalWrite(LED_BUILTIN, HIGH);
