@@ -13,17 +13,14 @@
 // GPIO Pin Definitions
 #define LORA_RECEIVE_INT 13 // TODO : MAKE SURE LORA RECEIVE INTERRUPT IS ENABLED AND UPDATE WITH RIGHT PIN
 #define RPI_POWER_ENABLE 25
-#define MPPT_CHARGE_ENABLE 26
+//#define MPPT_CHARGE_ENABLE 26
 
 // UART Serial Definitions
 #define RPI_BAUD 9600
 
 // RPi Communication Definitions
-#define SEND_LEAF_DATA 0x00
-#define START_AI 0x01
-#define STOP_AI 0x02
-#define START_RECORDING 0x03
-#define STOP_RECORDING 0x04
+#define STORE_LEAF_DATA 0x00
+#define SERVER_UPLOAD 0x01
 #define STOPCODE 0xFF
 
 // BMS Definitions
@@ -32,6 +29,7 @@
 #define BMS_ADDR 0x55
 #define MAC_SUBCMD 0x3E
 #define MAC_MFG_STATUS 0x57
+#define MFG_STATUS 0x57
 #define MAC_BUFF_SIZE 32
 #define GAUGING 0x21
 #define RSOC_READ 0x2D
@@ -40,19 +38,22 @@
 // Task Declarations
 
 void poll_battery(void *pvParameters); // polls battery level
+void upload_data(void *pvParameters);
 
 // Function Declarations
 
 void rpi_enable(); // turns on RPI power
 void mppt_enable(); // turns on MPPT charging
-void send_pi_msg(const char[] msg); // send message over UART to RPI 
-void transmit_lora_msg(const char[] msg); // send message out over LoRa back to gateway
-void receive_lora_msg(const char[] msg); // recevie message over LoRa from gateway
+//void send_pi_msg(const char[] msg); // send message over UART to RPI 
+//void transmit_lora_msg(const char[] msg); // send message out over LoRa back to gateway
+//void receive_lora_msg(const char[] msg); // recevie message over LoRa from gateway
 bool mac_read_command(uint8_t *data, uint8_t data_capacity, uint16_t subcmd); // perform a MAC rea on BM
-void write_bms_df(uint8_t addr, const uint8_t[] data, uint8_t size); // write data to BMS Data Flash
+//void write_bms_df(uint8_t addr, const uint8_t[] data, uint8_t size); // write data to BMS Data Flash
 
-void bms_setup(void); // initialize the BMS chip at startup
-int parse_msg(const char[] msg); // parses a LoRa packet
+//void bms_setup(void); // initialize the BMS chip at startup
+//int parse_msg(const char[] msg); // parses a LoRa packet
+uint8_t read_RSOC();
+void toggle_gauging();
 
 // called when receiving LoRa message
 void onReceive(int);
@@ -61,14 +62,18 @@ void onReceive(int);
 bool is_recording = false;
 bool is_processing = false;
 uint8_t leaf_id;
+uint8_t battery_rsoc = 0;
+int count = 0;
+
+SemaphoreHandle_t uploadMutex = NULL;
 
 void setup() {
   // put your setup code here, to run once:
   // GPIO setup
-  pinMode(RPI_POWER_ENABLE, OUTPUT);
+  pinMode(8, OUTPUT);
   rpi_enable();
 
-  pinMode(MPPT_CHARGE_ENABLE, OUTPUT);
+  pinMode(A3, OUTPUT);
   mppt_enable();
 
   if(!LoRa.begin(915E6)){
@@ -77,8 +82,28 @@ void setup() {
   LoRa.onReceive(onReceive);
   LoRa.receive();
 
-  // I2C setup
+  // I2C / BMS setup
   Wire.begin();
+  //Serial.println("Entering Default battery Charge.");
+  //Serial.println("Sending Slave addr.");
+  Wire.beginTransmission(BMS_ADDR);
+  //Serial.println("Writing data");
+  Wire.write(0x29);
+  Wire.write(0x48);
+  Wire.write(0x50);
+  Wire.write(0x14);
+  //Serial.println("Ending transmission");
+  Wire.endTransmission();
+
+  uint8_t data_buff[MAC_BUFF_SIZE];
+  int ret = mac_read_command(data_buff, MAC_BUFF_SIZE, MFG_STATUS);
+  uint16_t mfg_status = data_buff[0] | (data_buff[1]<<8);
+
+  uint8_t gauging_en = (mfg_status>>3) & 1;
+    
+  if (!gauging_en) {
+      toggle_gauging();
+  }
 
   // UART setup
   Serial.begin(RPI_BAUD);
@@ -93,23 +118,32 @@ void setup() {
     ,  NULL
     ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
     ,  NULL );
+    
+  xTaskCreate(
+    upload_data
+    ,  "upload_data"   // A name just for humans
+    ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
+    ,  NULL
+    ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+    ,  NULL );
+
+  uploadMutex = xSemaphoreCreateMutex();
 }
 
 // Task definitions
 
 // TODO: Write this function
 void poll_battery(void *pvParameters) {
-  void(pvParameters);
+  //void(pvParameters);
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   for (;;) {
       //xSemaphoreTake(i2c_mutex); // Begin critical section
       //... TODO : FILL OUT I2C COMMANDS TO GET BATTERY DATA
-      Wire.beginTransmission(BMS_ADDR);
-      Wire.write(RSOC_READ);
-      Wire.endTransmission();
-      Wire.requestFrom(BMS_ADDR, 2); // TODO: Finsi
-      uint16_t charge_perc;
+      battery_rsoc = read_RSOC();
+      if(battery_rsoc < 10){
+        digitalWrite(RPI_POWER_ENABLE, LOW);
+      }
       /* if(charge_perc < 10%)
        *    fire TURN OFF interrupt
        * else if(charge_perc > charged_threshold)
@@ -118,104 +152,167 @@ void poll_battery(void *pvParameters) {
        *    all good, keep going
       */
       //xSemaphoreGive(i2c_mutex); // End critical section
-      vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(250000)); // poll the battery every 5 minutes
+      vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(600000)); // poll the battery every 10 minutes
 
+  }
+}
+
+void upload_data(void *pvParameters) {
+  //void(pvParameters);
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+
+  for (;;) {
+     xSemaphoreTake(uploadMutex, portMAX_DELAY);
+     Serial.print(SERVER_UPLOAD);
+     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1200000));
   }
 }
 
 // Non-Task Function defintions
 void rpi_enable() {
-  digitalWrite(RPI_POWER_ENABLE, HIGH);
+  digitalWrite(8, HIGH);
 }
 
 void mppt_enable() {
-  digitalWrite(MPPT_CHARGE_ENABLE, HIGH);
+  digitalWrite(A3, LOW);
 }
 
 
-void bms_setup() {
-  // Request ManufacturingStatus()
-  uint8_t data_buff[MAC_BUFF_SIZE];
-  bool successful_read = false;
-  while (!successful_read) {
-    successful_read = mac_read_command(data_buff, MAC_BUFF_SIZE, MAC_MFG_STATUS);
-  }
+//void bms_setup() {
+//  // Request ManufacturingStatus()
+//  uint8_t data_buff[MAC_BUFF_SIZE];
+//  bool successful_read = false;
+//  while (!successful_read) {
+//    successful_read = mac_read_command(data_buff, MAC_BUFF_SIZE, MAC_MFG_STATUS);
+//  }
+//
+//  uint16_t mfg_status = data_buff[0] | (data_buff[1]<<8);
+//  
+//  uint8_t gauging_en = (mfg_status>>3) & 1;
+//  
+//  if (!gauging_en) {
+//    toggle_gauging();
+//  }
+//
+//  int16_t dschg_curr_thresh = 0;
+//  int16_t chg_curr_thresh = 0;
+//  int16_t quit_curr_thresh = 0;
+//  uint8_t dschg_relax_time = 0;
+//  uint8_t chg_relax_time = 0;
+//
+//  uint8_t dflash_values[8];   // 8 byte array of data to write
+//  memcpy(dflash_values, *dschg_curr_thresh, 2);
+//  memcpy(dflash_values + 2, *chg_curr_thresh, 2);
+//  memcpy(dflash_values + 4, *quit_curr_thresh, 2);
+//  dflash_values[6] = dschg_relax_time;
+//  dflash_values[7] = chg_relax_time;
+//
+//  write_bms_df(PARAMS_ADDR, dflash_values, 8);
+//}
 
-  uint16_t mfg_status = data_buff[0] | (data_buff[1]<<8);
-  
-  uint8_t gauging_en = (mfg_status>>3) & 1;
-  
-  if (!gauging_en) {
-    toggle_gauging();
-  }
-
-  int16_t dschg_curr_thresh = 0;
-  int16_t chg_curr_thresh = 0;
-  int16_t quit_curr_thresh = 0;
-  uint8_t dschg_relax_time = 0;
-  uint8_t chg_relax_time = 0;
-
-  uint8_t dflash_values[8];   // 8 byte array of data to write
-  memcpy(dflash_values, *dschg_curr_thresh, 2);
-  memcpy(dflash_values + 2, *chg_curr_thresh, 2);
-  memcpy(dflash_values + 4, *quit_curr_thresh, 2);
-  dflash_values[6] = dschg_relax_time;
-  dflash_values[7] = chg_relax_time;
-
-  write_bms_df(PARAMS_ADDR, dflash_values, 8);
-}
-
-void write_bms_df(uint16_t addr, const uint8_t[] data, uint8_t size) {
-  for (uint8_t i=0; i<size/4; ++i) {
-    Wire.beginTransmission(BMS_ADDR);
-    Wire.write(addr);
-    Wire.write(addr >> 8);
-    for (uint8_t j=i*4; j<i*4+4; ++j) {
-      Wire.write(data[j]);
-    }
-    Wire.endTransmission();
-
-    delay(5);
-  }
-}
+//void write_bms_df(uint16_t addr, const uint8_t[] data, uint8_t size) {
+//  for (uint8_t i=0; i<size/4; ++i) {
+//    Wire.beginTransmission(BMS_ADDR);
+//    Wire.write(addr);
+//    Wire.write(addr >> 8);
+//    for (uint8_t j=i*4; j<i*4+4; ++j) {
+//      Wire.write(data[j]);
+//    }
+//    Wire.endTransmission();
+//
+//    delay(5);
+//  }
+//}
 
 bool mac_read_command(uint8_t *data, uint8_t data_capacity, uint16_t subcmd) {
   // Request ManufacturingStatus()
   if (data_capacity < MAC_BUFF_SIZE) {
-    return false;
+    //Serial.println("Data capacity not met");
+    return -1;
   }
 
   Wire.beginTransmission(BMS_ADDR);
+  //Serial.println("transmission begun");
   Wire.write(MAC_SUBCMD);   // MAC starting address
-  Wire.write(subcmd);   // send low byte of mfg status cmd
-  Wire.write(subcmd >> 8);  // send high byte of mfg status cmd
+  Wire.write(subcmd);
+  Wire.write(subcmd >> 8);
+  int ret = Wire.endTransmission();
+  //Serial.println(ret);
+  //Serial.println("I2C message sent, reading from I2C");
+
+  // Reset start address and perform the read
+  Wire.beginTransmission(BMS_ADDR);
+  Wire.write(MAC_SUBCMD);
   Wire.endTransmission();
 
-  // Get ManufacturingStatus()
-  Wire.requestFrom(BMS_ADDR, MAC_BUFF_SIZE+4);
-  while (Wire.available() < MAC_BUFF_SIZE+4) {
-    delay(1000);
-  }
+  Wire.requestFrom(BMS_ADDR, 18);
 
-  uint8_t mac_buff[MAC_BUFF_SIZE+4];
+  uint8_t mac_buff[36];
 
-  for (uint8_t i=0; i<MAC_BUFF_SIZE+4; ++i) {
+  for (uint8_t i=0; i<18; ++i) {
+    while(Wire.available() < 1);
     mac_buff[i] = Wire.read();
+    //Serial.print(i);
+    //Serial.print(' ');
   }
+
+  //second transaction
+  Wire.requestFrom(BMS_ADDR, 18);
+
+  for (uint8_t i=18; i<36; ++i) {
+    while(Wire.available() < 1);
+    mac_buff[i] = Wire.read();
+    //Serial.print(i);
+    //Serial.print(' ');
+  }
+
+  //Serial.println("\nBytes received");
 
   uint16_t cmd_check = mac_buff[0] | (mac_buff[1] << 8);
+
+  //char strbuf[50];
+  //sprintf(strbuf, "The command sent was %#04x, we received %#04x", subcmd, cmd_check);
+  //Serial.println(strbuf);
   
   uint8_t len = mac_buff[35];
   uint8_t checksum = mac_buff[34];
 
-  uint8_t validate = mac_buff[0]+mac_buff[1];
+  uint8_t check_checksum = mac_buff[0]+mac_buff[1];
   for(int i = 0; i < len - 4; ++i)
   {
-    validate += mac_buff[i+2];
+    check_checksum += mac_buff[i+2];
     data[i] = mac_buff[i+2];
   }
-  
-  return checksum != (~validate);
+
+  check_checksum = ~check_checksum;
+
+  //sprintf(strbuf, "Caculated checksum %#04x, we received %#04x", check_checksum, checksum);
+  //Serial.println(strbuf);
+  if(checksum != check_checksum)
+  {
+    //Serial.println("Check Sum failed for data");
+    return -1;
+  }
+
+  return len;
+}
+
+uint8_t read_RSOC() {
+  Wire.beginTransmission(BMS_ADDR);
+  Wire.write(RSOC_READ);
+  Wire.endTransmission();
+
+  Wire.requestFrom(BMS_ADDR, 1);
+  while(Wire.available() < 1);
+  return Wire.read();
+}
+
+void toggle_gauging() {
+    Wire.beginTransmission(BMS_ADDR);
+    Wire.write(MAC_SUBCMD); // MAC starting address
+    Wire.write(GAUGING);    // Send low byte of gauging cmd
+    Wire.write(GAUGING >> 8);   // Send high byte of gauging cmd 
+    Wire.endTransmission();
 }
 
 void onReceive(int packetSize) {
@@ -223,12 +320,19 @@ void onReceive(int packetSize) {
     leaf_id = LoRa.read();
     if(leaf_id == STOPCODE){
       Serial.print((char)leaf_id);
+      if(++count >= 2){
+        count = 0;
+        xSemaphoreGive(uploadMutex);
+      }
     }
     return;
   }
+  Serial.print(STORE_LEAF_DATA);
   Serial.print(leaf_id);
-  for (uint8_t i=0; i<9; ++i)
+  for (uint8_t i=0; i<9; ++i){
     Serial.print((char)LoRa.read());
+  }
+  
 }
 
 // This is the Idle Task
