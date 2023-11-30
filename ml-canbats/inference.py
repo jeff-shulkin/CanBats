@@ -11,6 +11,10 @@ from tensorflow import lite
 
 import csv
 
+ImagesDir = "./images"
+OutputPath = "./outgoing_data.csv"
+ModelPath = "./models_lite/m-1.tflite"
+
 species_list = ['ANPA',
  'COTO',
  'EPFU',
@@ -43,20 +47,23 @@ species_list = ['ANPA',
 
 print("Interpreter Loaded")
 
-interpreter = lite.Interpreter(model_path="./models_lite/m-1.tflite")
+interpreter = lite.Interpreter(model_path=ModelPath)
 my_signature = interpreter.get_signature_runner()
 
 print("Model Loaded")
 
 # os.makedirs('./media/usb', exist_ok=True)
-out_file = open("./outgoing_data.csv", 'w', newline='')
+out_file = open(OutputPath, 'w', newline='')
 out_writer = csv.writer(out_file)
 
 # time = 12
 
-for waves in os.listdir("./images"):
-    time = 12 #TODO change to wave timestamp thing
-    wave_path = os.path.join(os.fsdecode("./images"), os.fsdecode(waves))
+for waves in os.listdir(ImagesDir):
+    try:
+        time = int(waves)
+    except:
+        time = 123456789
+    wave_path = os.path.join(os.fsdecode(ImagesDir), os.fsdecode(waves))
     print(wave_path)
 
     conf_species_dict = {}#dict[str, int]
@@ -78,8 +85,6 @@ for waves in os.listdir("./images"):
             i += 1
             # print(img)
             
-            os.remove(file)
-
         # my_signature is callable with input as arguments.
         output = my_signature(input_1=input)
         # 'output' is dictionary with all outputs from the inference.
@@ -99,13 +104,19 @@ for waves in os.listdir("./images"):
             if conf_species[0] > 0 and conf_species[1] != "NOISE":
                 # conf_species_dict.setdefault(conf_species[1], 0)
                 # conf_species_dict[conf_species[1]] += 1
-                temp = conf_species_dict.get(conf_species[1], (0, 0))
-                temp = (temp[0] + 1, max(temp[1],conf_species[0]))
-                conf_species_dict[conf_species[1]] = temp
+                out_writer.writerow([time, conf_species[1], conf_species[0]])#, wave_path])
+    #             temp = conf_species_dict.get(conf_species[1], (0, 0))
+    #             temp = (temp[0] + 1, max(temp[1],conf_species[0]))
+    #             conf_species_dict[conf_species[1]] = temp
 
-    for species, count in conf_species_dict.items():
-        out_writer.writerow([time, species, count[1], count[0], wave_path])
+    # for species, count in conf_species_dict.items():
+    #     out_writer.writerow([time, species, count[1], count[0], wave_path])
     # time += 1
+        
+        for path in batch:
+            num = path.split('_')[-1].split('.')[0]
+            file = os.path.join(os.fsdecode(wave_path), os.fsdecode(path))
+            os.remove(file)
 
     os.rmdir(wave_path)
 
