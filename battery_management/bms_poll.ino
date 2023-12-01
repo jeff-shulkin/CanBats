@@ -14,19 +14,22 @@
 void setup() {
     Serial.begin(9600);
     Serial.println("Starting in setup...");
-
+    
+    if (!LoRa.begin(915E6)) {
+      Serial.println("Starting LoRa failed!");
+      while (1);
+    }
+    
     Wire.begin();
 
-    //enter default battery charge
-    Serial.println("Entering Default battery Charge.");
-    Serial.println("Sending Slave addr.");
+    //Set default battery charge
+    Serial.println("Sending Battery Design Capacity.");
     Wire.beginTransmission(BMS_ADDR);
-    Serial.println("Writing data");
     Wire.write(0x29);
-    Wire.write(0x48);
+    Wire.write(0x46);
     Wire.write(0x50);
     Wire.write(0x14);
-    Serial.println("Ending transmission");
+    Serial.println("Design Capacity sent");
     Wire.endTransmission();
 
     Serial.println("Requesting manufacturing status");
@@ -191,13 +194,6 @@ void do_it_be_charging() {
 }
 
 void loop() {
-  //entered the loop
-  /*uint8_t charging = do_it_be_charging();
-  if(charging) {
-    Serial.println("It do be discharging");
-  }else {
-    Serial.println("It do be charging");
-  }*/
   do_it_be_charging();
   delay(10000);
 }
