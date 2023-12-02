@@ -5,8 +5,12 @@
 #define NODE_ID 0
 #define PI_INTERRUPT 4
 
-#define DATA_REQUEST 0
-#define GET_LEAF_DATA 1
+#define DATA_REQUEST 0x00
+//#define SEND_LEAF_DATA 0x00
+#define START_AI 0x01
+#define STOP_AI 0x02
+#define START_RECORDING 0x03
+#define STOP_RECORDING 0x04
 #define STOPCODE 0xFF
 
 static bool toggle_interrupt = 0;
@@ -15,18 +19,31 @@ void send_pi_command(uint8_t cmd);
 void get_pi_data();
 
 void setup() {
-    counter = 0;
-    pinMode(7, OUTPUT);
-    Serial.begin(9600);
+  counter = 0;
+  //pinMode(7, OUTPUT);
+  Serial.begin(9600);
    
     if (!LoRa.begin(915E6)) {
         //digitalWrite(7,HIGH);
         while (1);  // LoRa failed
     }
+  uint16_t timeout = 0;
+  // wait until RPi boots up
+  while (timeout < 300 && Serial.available() < 1) {
+    delay(5000);
+    timeout += 5;
+  }
 }
 
 void loop() {
   //digitalWrite(7, HIGH);
+  //AI
+  Serial.print(START_AI);
+  delay(180000);
+  Serial.print(STOP_AI);
+  delay(100);
+  //SEND LEAF DATA
+  Serial.print(DATA_REQUEST);
   LoRa.beginPacket();
   LoRa.write(NODE_ID);
   LoRa.endPacket();

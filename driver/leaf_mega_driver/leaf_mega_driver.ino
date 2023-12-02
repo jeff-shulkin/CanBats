@@ -187,13 +187,13 @@ void poll_battery(void *pvParameters) {
       //xSemaphoreTake(i2c_mutex); // Begin critical section
       //... TODO : FILL OUT I2C COMMANDS TO GET BATTERY DATA
       battery_rsoc = read_RSOC();
-//      if(battery_rsoc < 10){
-//        digitalWrite(RPI_POWER_ENABLE, LOW);
-//      }else if(battery_rsoc > 80){
-//        //xSemaphoreGive(processingMutex);
-//      }
+      if(battery_rsoc < 10){
+        digitalWrite(RPI_POWER_ENABLE, LOW);
+      }else if(battery_rsoc > 80){
+        //xSemaphoreGive(processingMutex);
+      }
       //xSemaphoreGive(i2c_mutex); // End critical section
-      vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(600000)); // poll the battery every 5 minutes
+      vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(600000)); // poll the battery every 10 minutes
 
   }
 }
@@ -208,11 +208,11 @@ void ai_processing(void *pvParameters){
       is_processing = false;
       Serial.print(STOP_AI);
       xSemaphoreGive(sendMutex);
-      vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(300000));
+      vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(82800000));
     } else {
       is_processing = true;
       Serial.print(START_AI);
-      vTaskDelay(pdMS_TO_TICKS(180000)); // 3 minutes to process
+      vTaskDelay(pdMS_TO_TICKS(3600000)); // 1 hour to process
     }
   }
 } // ai_processing() Task
@@ -229,7 +229,7 @@ void recording(void *pvParameters){
     } else {
       is_recording = true;
       Serial.print(START_RECORDING);
-      vTaskDelay(pdMS_TO_TICKS(1000));
+      vTaskDelay(pdMS_TO_TICKS(5000));
     }
   }
 } // recording() Task
@@ -242,7 +242,7 @@ void send_leaf_data(void *pvParameters){
       xSemaphoreTake(sendMutex, portMAX_DELAY);
       // Say which node is sending
       if(NODE_ID == 0x01){
-        vTaskDelay(pdMS_TO_TICKS(60000)); // give other node a minute to upload
+        vTaskDelay(pdMS_TO_TICKS(300000)); // give other node time to upload
       }
       LoRa.beginPacket();
       LoRa.write(NODE_ID);
@@ -276,7 +276,7 @@ void send_leaf_data(void *pvParameters){
         LoRa.endPacket();
         delay(100);
     }
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(600000)); // every 10 min
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(86400000)); // every day
   }
 } // send_leaf_data Task
 

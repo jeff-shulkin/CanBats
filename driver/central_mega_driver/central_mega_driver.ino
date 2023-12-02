@@ -143,14 +143,6 @@ void poll_battery(void *pvParameters) {
       battery_rsoc = read_RSOC();
       if(battery_rsoc < 10){
         digitalWrite(RPI_POWER_ENABLE, LOW);
-      }
-      /* if(charge_perc < 10%)
-       *    fire TURN OFF interrupt
-       * else if(charge_perc > charged_threshold)
-       *    turn back on
-       * else
-       *    all good, keep going
-      */
       //xSemaphoreGive(i2c_mutex); // End critical section
       vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(600000)); // poll the battery every 10 minutes
 
@@ -164,7 +156,7 @@ void upload_data(void *pvParameters) {
   for (;;) {
      xSemaphoreTake(uploadMutex, portMAX_DELAY);
      Serial.print(SERVER_UPLOAD);
-     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1200000));
+     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(86400000)); //upload every day
   }
 }
 
