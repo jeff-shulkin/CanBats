@@ -1,4 +1,5 @@
 #include <Wire.h>
+#include <LoRa.h>
 
 // BMS Definitions
 #define BMS_ADDR 0x55
@@ -13,22 +14,25 @@
 void setup() {
     Serial.begin(9600);
     Serial.println("Starting in setup...");
-
+    
+    if (!LoRa.begin(915E6)) {
+      Serial.println("Starting LoRa failed!");
+      while (1);
+    }
+    
     Wire.begin();
 
-    //enter default battery charge
-    Serial.println("Entering Default battery Charge.");
-    Serial.println("Sending Slave addr.");
+    //Set default battery charge
+    Serial.println("Sending Battery Design Capacity.");
     Wire.beginTransmission(BMS_ADDR);
-    Serial.println("Writing data");
     Wire.write(0x29);
-    Wire.write(0x48);
+    Wire.write(0x46);
     Wire.write(0x50);
     Wire.write(0x14);
-    Serial.println("Ending transmission");
+    Serial.println("Design Capacity sent");
     Wire.endTransmission();
 
-    Serial.println("MAC sbcmd bullshit");
+    Serial.println("Requesting manufacturing status");
     uint8_t data_buff[MAC_BUFF_SIZE];
     int ret = mac_read_command(data_buff, MAC_BUFF_SIZE, MFG_STATUS);
     uint16_t mfg_status = data_buff[0] | (data_buff[1]<<8);
@@ -168,31 +172,28 @@ void bms_setup() {
   Wire.endTransmission();
 }
 
-uint8_t do_it_be_charging() {
+void do_it_be_charging() {
   Wire.beginTransmission(BMS_ADDR);
   Wire.write(BATT_STAT);
   Wire.endTransmission();
 
-  Wire.requestFrom(BATT_STAT, 1);
+  Wire.requestFrom(BMS_ADDR, 1);
   while(Wire.available() < 1) {
-    Serial.println("waiting...");
-    delay(1000);
+    delay(10);
   }
-  Serial.println("Finally read something");
-  uint8_t batt_stat_reg = Wire.read();
-  batt_stat_reg >>= 6;
-  batt_stat_reg &= 1;
-  return batt_stat_reg; 
+  LoRa.println("Got battery status");
+  uint8_t status = Wire.read();
+  uint8_t error_code = status & ~0b111;
+  LoRa.println(error_code ? "No error code" : "Got an error :(");
+  uint8_t depleted = status & ~(1<<4);
+  LoRa.println(depleted ? "Battery is dead" : "Battery is alive");
+  uint8_t full = status & ~(1<<5);
+  LoRa.println(full ? "Battery is fully charged" : "Battery is not fully charged");
+  uint8_t charging = status & ~(1<<6);
+  LoRa.println(charging ? "Battery is discharging" : "Battery is charging");
 }
 
 void loop() {
-  //entered the loop
-  /*uint8_t charging = do_it_be_charging();
-  if(charging) {
-    Serial.println("It do be discharging");
-  }else {
-    Serial.println("It do be charging");
-  }*/
-  Serial.println("Oh baby we be looping :)");
+  do_it_be_charging();
   delay(10000);
 }

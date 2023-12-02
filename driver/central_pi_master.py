@@ -21,12 +21,13 @@ def signal_handler(signal, frame):  # kills all subprocesses upon keyboard inter
 signal.signal(signal.SIGINT, signal_handler)    # set the keyboard interrupt handler
 
 ser = serial.Serial('/dev/ttyS0', 9600)     # Open serial port
+ser.write(b'\x00')
 
 while 1:
     cmd = ser.read()    # we wait forever for a serial command
 
     if cmd == STORE_LEAF_DATA:
-        thing = subprocess.run(['python3','data_transfer.py','a'])  # use run to BLOCK this script's serial access until subprocess has ended
+        thing = subprocess.run(['/usr/bin/python3','/home/canbats/data_transfer.py','a'])  # use run to BLOCK this script's serial access until subprocess has ended
 
     elif cmd == UPLOAD_DATA:
-        subprocess.run(['python3', 'upload_data.py', 'new_data.csv'])   # use run to BLOCK csv file access
+        subprocess.run(['/usr/bin/python3','/home/canbats/upload_data.py', '/home/canbats/new_data.csv'])   # use run to BLOCK csv file access
