@@ -8,18 +8,18 @@ paths = []
 
 sp = Spectrogram()
 
-SourceDir = "./waves"
-DoneDir = "./waves_done"
-ImagesDir = "./images"
+SourceDir = "/media/usb/WavesUnused2"
+DoneDir = "/media/usb/Waves_Done2"
+ImagesDir = "/home/canbats3/images"
 os.makedirs(DoneDir, exist_ok=True)
 
 sourcelist = os.listdir(SourceDir)
-files = random.sample(sourcelist, min(len(sourcelist), 10))
+files = random.sample(sourcelist, min(len(sourcelist), 1))
 #files = os.listdir(SourceDir)
 for file2 in files:
     file = os.path.join(os.fsdecode(SourceDir), os.fsdecode(file2))
-    # print(file)
-    # print(file2)
+    print(file)
+    print(file2)
     file2 = file2.split(".wav")[0]
 
     spdata = sp.process_file(file)
