@@ -7,13 +7,13 @@ def chunk_list(l, n):
     for i in range(0, len(l), n):
         yield l[i:i + n]
 
-from tensorflow import lite
+import tflite_runtime.interpreter as lite
 
 import csv
 
-ImagesDir = "./images"
-OutputPath = "./outgoing_data.csv"
-ModelPath = "./models_lite/m-1.tflite"
+ImagesDir = "/home/canbats3/images"
+OutputPath = "/home/canbats3/outgoing_data.csv"
+ModelPath = "/home/canbats3/models_lite/m-1.tflite"
 
 species_list = ['ANPA',
  'COTO',
@@ -53,7 +53,7 @@ my_signature = interpreter.get_signature_runner()
 print("Model Loaded")
 
 # os.makedirs('./media/usb', exist_ok=True)
-out_file = open(OutputPath, 'w', newline='')
+out_file = open(OutputPath, 'a', newline='')
 out_writer = csv.writer(out_file)
 
 # time = 12
@@ -84,6 +84,7 @@ for waves in os.listdir(ImagesDir):
             input[i] = img / 255.0
             i += 1
             # print(img)
+            os.remove(file)
             
         # my_signature is callable with input as arguments.
         output = my_signature(input_1=input)
@@ -94,7 +95,7 @@ for waves in os.listdir(ImagesDir):
         # print(f"{num} = {output['dense_3'][0]}")
 
         for out in output['dense_3']:
-            conf_species = max((c, species_list[idx]) for idx, c in enumerate(out))
+            conf_species = max((c, idx) for idx, c in enumerate(out))
             if conf_species == None:
                 continue
             
@@ -113,10 +114,10 @@ for waves in os.listdir(ImagesDir):
     #     out_writer.writerow([time, species, count[1], count[0], wave_path])
     # time += 1
         
-        for path in batch:
-            num = path.split('_')[-1].split('.')[0]
-            file = os.path.join(os.fsdecode(wave_path), os.fsdecode(path))
-            os.remove(file)
+#        for path in batch:
+#            num = path.split('_')[-1].split('.')[0]
+#            file = os.path.join(os.fsdecode(wave_path), os.fsdecode(path))
+#            os.remove(file)
 
     os.rmdir(wave_path)
 
